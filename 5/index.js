@@ -13,26 +13,48 @@ for (const line of lines) {
 }
 const [seedsStr, ...mappings] = sections;
 const [, ...seeds] = seedsStr[0].split(" ").map((s) => parseInt(s));
-let current = seeds;
+let current = [];
+for (let i = 0; i < seeds.length; i += 2) {
+  const [start, n] = seeds.slice(i, i + 2);
+  current.push({ start, n });
+}
+current.sort((a, b) => a.start - b.start);
+console.log({ seeds, current });
 for (const mapping of mappings) {
-  const [header, ...lines] = mapping;
+  const [, ...lines] = mapping;
   const ranges = lines.map((line) => {
     const [dest, src, rangeSize] = line.split(" ").map((s) => parseInt(s));
-    return { dest, src, rangeSize };
+    return { src, dest, rangeSize };
   });
+  ranges.sort((a, b) => a.src - b.src);
   const newCurrent = [];
-  for (const c of current) {
-    const range = ranges.find(
-      ({ src, rangeSize }) => src <= c && c < src + rangeSize
+  const push = (start, n) => {
+    if (n) newCurrent.push({ start, n });
+  };
+  for (let { start, n } of current) {
+    const end = start + n - 1;
+    const overlappingRanges = ranges.filter(
+      ({ src, rangeSize }) => src <= end && src + rangeSize > start
     );
-    if (range) {
-      const { src, dest } = range;
-      const newC = dest + (c - src);
-      newCurrent.push(newC);
-    } else {
-      newCurrent.push(c);
+    // console.log({ start, n, overlappingRanges });
+    for (let i = 0; i < overlappingRanges.length; i++) {
+      const { src, dest, rangeSize } = overlappingRanges[i];
+      if (start < src) {
+        n = n - (src - start);
+        push(start, n);
+        start = src;
+      }
+      const minLen = Math.min(n, rangeSize);
+      const maxStart = Math.max(start, src);
+      push(dest + (maxStart - src), minLen);
+      start = src + rangeSize;
+      n -= minLen;
     }
+    push(start, n);
   }
+  // console.log({ newCurrent });
+
   current = newCurrent;
 }
-console.log({ seeds, current, minCurrent: Math.min(...current) });
+current.sort((a, b) => a.start - b.start);
+console.log({ current, minCurrent: current[0] });
