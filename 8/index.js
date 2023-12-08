@@ -11,20 +11,25 @@ for (const mapping of mappings) {
   console.log({ from, l, r });
   map.set(from, { l, r });
 }
-let current = 'AAA'
+let current = [...map.keys()].filter((k) => k[2] === "A");
+console.log({ current });
 let steps = 0;
-for (let i = 0 ;; i++) {
-  const inst = lr[i%lr.length];
-  console.log({ current, inst });
-  const { l, r } = map.get(current);
-  if (current === 'ZZZ') {
+for (let i = 0; ; i++) {
+  const inst = lr[i % lr.length];
+  // console.log({ current, inst });
+  if (current.every((c) => c[2] === "Z")) {
     break;
   }
-  if (inst === 'L') {
-    current = l;
-  } else {
-    current = r;
-  }
+  current = current.map((c) => {
+    const { l, r } = map.get(c);
+    if (inst === "L") {
+      return l;
+    } else {
+      return r;
+    }
+  });
+  // console.log({ current });
+  if (steps % 1000000 === 0) console.log({ steps });
   steps++;
 }
 console.log({ steps });
