@@ -21,14 +21,26 @@ SJLL7
 |F--J
 LJ.LJ
 `;
+
+const ex4 = `
+...........
+.S-------7.
+.|F-----7|.
+.||.....||.
+.||.....||.
+.|L-7.F-J|.
+.|..|.|..|.
+.L--J.L--J.
+...........
+`;
 import input from "./input?raw";
-const lines = input
+const lines = ex4
   .split("\n")
   .map((l) => l.trim().split(""))
   .filter((l) => l.length > 0);
 const startingLine = lines.findIndex((l) => l.includes("S"));
 const startingCol = lines[startingLine].findIndex((l) => l === "S");
-console.log({ startingPosition: startingLine, startingRow: startingCol });
+console.log({ startingLine, startingCol });
 
 const get = (c, l) => lines[l]?.[c];
 const fourNeighbors = (x, y) => [
@@ -98,40 +110,8 @@ const stepInDir = (x, y, dir) => {
   }[dir];
 };
 
-const visited = new Map();
-
-const mkCrawler = (x, y, dir) => {
-  const initx = x;
-  const inity = y;
-  let steps = 0;
-  console.log({ initx, inity, dir });
-  return () => {
-    // console.log({ x, y, dir });
-
-    const newPos = stepInDir(x, y, dir);
-    if (visited.has(newPos[0] + "," + newPos[1])) return;
-
-    const char = get(...newPos);
-    // console.log({ newPos, char });
-    if (char === "S") return;
-    const nextDir = newDir(dir, char);
-    // console.log({ char, dir, nextDir });
-
-    if (nextDir === undefined) {
-      console.log({ x, y, dir });
-      console.error("no next dir");
-      process.exit(1);
-    }
-    x = newPos[0];
-    y = newPos[1];
-    dir = nextDir;
-
-    steps++;
-
-    visited.set(x + "," + y, steps);
-    return true;
-  };
-};
+const pipeDir = new Map();
+const pipeNextDir = new Map();
 
 let pipes = getPipes(startingCol, startingLine);
 if (pipes.length !== 2) {
@@ -145,15 +125,89 @@ console.log(
   "initial directions",
   pipes.map((p) => p.dir)
 );
-const [d1, d2] = pipes.map((p) => p.dir);
-// console.log({ steps1: followPipe(1, 1, "S"), steps2: followPipe(1, 1, "E") });
-const crawler1 = mkCrawler(startingCol, startingLine, d1);
-const crawler2 = mkCrawler(startingCol, startingLine, d2);
-while (true) {
-  // if (!crawler1() && !crawler2()) break
-  const changed1 = crawler1();
-  const changed2 = crawler2();
-  if (!changed1 && !changed2) break;
+const [d1] = pipes.map((p) => p.dir);
+let char;
+let dir = d1;
+let x = startingCol;
+let y = startingLine;
+const path = []
+const pathObjMap = new Map()
+do {
+  const pathObj = { x, y, dir };
+  path.push(pathObj)
+  pathObjMap.set(x + "," + y, pathObj)
+  const [nx, ny] = stepInDir(x, y, dir);
+
+  char = get(nx, ny);
+  pathObj.char = char
+  if (char === 'S') break;
+  console.log({ char, nx, ny, dir });
+
+  const nextDir = newDir(dir, char);
+  pathObj.nextDir = nextDir
+  pathObj.nx = nx
+  pathObj.ny = ny
+  if (nextDir === undefined) {
+    console.log({ x, y, nx, ny, char, dir });
+    console.error("no next dir");
+    process.exit(1);
+  }
+  pipeDir.set(nx + "," + ny, dir);
+  pipeNextDir.set(x + "," + y, nextDir);
+
+  x = nx;
+  y = ny;
+  dir = nextDir;
+} while (char !== "S");
+
+console.log(pipeDir);
+// console.log(Math.max(zz`...visited.values()));
+const testInside = (px, py) => {
+  // search for a pipe in the four directions
+  if (get(px, py) !== ".") {
+    console.error("not a . ", { px, py, ch: get(px, py) });
+    throw new Error("not a .");
+  }
+  let dir;
+  for (dir of ["N", "S", "E", "W"]) {
+    let x = px;
+    let y = py;
+    while (true) {
+      const [nx, ny] = stepInDir(x, y, dir);
+      const char = get(nx, ny);
+
+      if (!char) break;
+      x = nx;
+      y = ny;
+      if (char === ".") continue;
+      return { x, y, char, dir };
+    }
+  }
+};
+
+const isInside = (searchDir, foundPipeDir) => {
+  if (searchDir === "E" && foundPipeDir === "S") return true;
+  if (searchDir === "N" && foundPipeDir === "E") return true;
+  if (searchDir === "W" && foundPipeDir === "N") return true;
+  if (searchDir === "S" && foundPipeDir === "W") return true;
+  return false;
+};
+
+for (let lineno = 5; lineno < 9; lineno++) {
+  const line = lines[lineno];
+  for (let col = 0; col < line.length; col++) {
+    const char = line[col];
+    if (char !== ".") continue;
+    const d = testInside(col, lineno);
+    if (!d) continue;
+
+    const { x,y,dir } = d;
+    // const foundPipeDir = pipeDir.get(x + "," + y);
+    // const nextDir = pipeNextDir.get(x + "," + y);
+    const po = pathObjMap.get(x + "," + y)
+    const foundPipeDir = po.dir
+    const nextDir = po.nextDir
+    console.log({ lineno, col, searchDir:dir, in: foundPipeDir, out: nextDir, foundChar: po.char }, d);
+  }
+  console.log();
 }
-// console.log(visited);
-console.log(Math.max(...visited.values()));
