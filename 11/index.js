@@ -36,6 +36,7 @@ for (let i = 0; i < lineLength; i++) {
 }
 console.log({ emptyLineIndexes, emptyColumnIndexes, galaxies });
 let sum = 0;
+const expansion = 1000000 -1
 for (let i = 0; i < galaxies.length; i++) {
   const [l1, c1] = galaxies[i];
   for (let j = i + 1; j < galaxies.length; j++) {
@@ -60,9 +61,9 @@ for (let i = 0; i < galaxies.length; i++) {
       }
     }
 
-    const dist = (maxLine - minLine) + (maxCol - minCol) + emptyLinesCrossed + emptyColumnsCrossed
+    const dist = (maxLine - minLine) + (maxCol - minCol) + expansion * emptyLinesCrossed + expansion * emptyColumnsCrossed
     sum += dist
-    console.log({ from: i+1, to: j+1, dist, emptyLinesCrossed, emptyColumnsCrossed })
+    // console.log({ from: i+1, to: j+1, dist, emptyLinesCrossed, emptyColumnsCrossed })
   }
 }
 
